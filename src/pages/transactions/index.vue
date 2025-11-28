@@ -777,7 +777,7 @@ export default {
         group: item.group,
         previousTransactions: item?.previousTransactions?.slice()
       }));
-      this.filter.groupForRoute = this.todayGroupNumber + 1;
+      this.filter.groupForRoute = this.todayGroupNumber;
     },
     addNewRow(row) {
       const id = row.id;
