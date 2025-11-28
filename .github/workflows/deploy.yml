@@ -1,0 +1,44 @@
+name: FURKAN GIDA STOK TAKIP
+
+on:
+  push:
+    branches:
+      - main 
+
+permissions:
+  contents: write  # Organization private repo için push izni
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Repo'yu çek
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      # Node.js kurulumu
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 14
+
+      # Bağımlılıkları yükle
+      - name: Install Dependencies
+        run: npm ci
+
+      # Projeyi build et
+      - name: Build Project
+        env:
+          VUE_APP_API_URL: ${{ secrets.VUE_APP_API_URL }}  # API yoksa boş bırakabilirsin
+        run: npm run build
+
+      # GitHub Pages'e deploy et
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}  # Action token otomatik, write izni olmalı
+          publish_dir: ./dist
+          commit_message: "Website is published!"
+          force_orphan: true
+          commit_dirtiness: true

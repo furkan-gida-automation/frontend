@@ -1,0 +1,37 @@
+.el-table__row td {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+}
+
+.el-pagination.is-background .el-pager li:not(.disabled) {
+    &.active {
+        background: #28a745 !important;
+        &:hover {
+        color: #fff !important;
+        }
+    }
+    &:hover {
+        color: #28a745 !important;
+    }
+}
+.picker-width div {
+    width: 100% !important;
+}
+
+.el-form-item__label {
+    margin-bottom: -15px !important;
+}
+
+.no-resize-textarea textarea {
+    resize: none !important;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.cursor {
+    cursor: pointer;
+}
+.gap-5 {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
