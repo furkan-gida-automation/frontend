@@ -313,7 +313,14 @@ export default {
       };
     },
     resetFormData() {
-
+      this.formData = {
+        name: "",
+        companyName: "",
+        phone: "",
+        address: "",
+        group: "",
+        note: ""
+      };
     },
     handleClick(id) {
       this.$router.push({ name: 'transactions', query: { q: id } });
