@@ -27,16 +27,16 @@
             <span class="menu-title">Müşteriler</span>
           </router-link>
         </li>
-        <li class="nav-item">
+        <!-- <li class="nav-item">
           <router-link class="nav-link" to="/tahsilat-hareketleri" exact>
             <i class="mdi mdi-file-document menu-icon"></i>
-            <span class="menu-title">Tahsilat Hareketleri</span>
+            <span class="menu-title">Hesap Ekstreleri</span>
           </router-link>
-        </li>
+        </li> -->
         <li class="nav-item">
           <router-link class="nav-link" to="/grup-yonetimi" exact>
             <i class="mdi mdi-routes menu-icon"></i>
-            <span class="menu-title">Grup Yönetimi</span>
+            <span class="menu-title">Bölge Yönetimi</span>
           </router-link>
         </li>
         <li class="nav-item">

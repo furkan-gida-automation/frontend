@@ -7,47 +7,23 @@
             <i class="mdi mdi-file-document menu-icon"></i>
           </span>
           <div class="page-header__summary-item">
-            <span>Tahsilat Hareketleri ({{filteredData.length}})</span>
-            <span class="font-weight-bold">{{ getCurrentCompany }}</span>
+            <span>{{getCurrentCompany}}</span>
+            <span>Hesap Ekstesi ({{filteredData.length}})</span>
           </div>
         </div>
         <div>
-          <el-button v-if="getCurrentCompany" type="success" size="medium" icon="el-icon-circle-plus" @click="isOpenDialog('add')">Yeni Satış</el-button>
-          <el-button type="success" size="medium" icon="el-icon-location-outline" @click="openCreateRouteDialog">Rota Oluştur</el-button>
+          <el-button type="success" size="medium" icon="el-icon-circle-plus" @click="newRecord(0)" :disabled="disableAdd">Satış</el-button>
+          <el-button type="success" size="medium" icon="el-icon-circle-plus" @click="newRecord(1)" :disabled="disableAdd">Tahsilat</el-button>
+          <el-button type="info" size="medium" icon="el-icon-printer" @click="exportExtract">Dışa Aktar</el-button>
         </div>
       </h3>
     </div>
     <div class="card">
       <div class="card-body">
+        <!-- <h3 class="text-md mb-3">{{ getCurrentCompany }}</h3> -->
         <div class="row">
           <!-- filter start -->
-          <div class="col-3 col-sm-4 col-md-2 mb-3">
-            <el-input
-              v-model="filter.search"
-              placeholder="Müşteri, Firma arayın"
-              clearable
-              prefix-icon="el-icon-search"
-            />
-          </div>
-          <div v-if="!currentCustomerId" class="col-2 col-sm-4 col-md-2 mb-3 pl-0">
-            <el-select
-              class="w-full"
-              v-model="filter.group"
-              filterable
-              clearable
-              placeholder="Grup seçin"
-              @change="currentPage = 1"
-            >
-              <el-option
-                v-for="item in getGroupList"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
-              >
-              </el-option>
-            </el-select>
-          </div>
-          <div class="col-2 col-sm-4 col-md-3 mb-3 pl-0">
+          <div class="col-2 col-sm-4 col-md-3 mb-3 pl-1 ml-3">
             <el-date-picker
               class="w-full"
               v-model="filter.transactionDate"
@@ -57,28 +33,29 @@
               end-placeholder="İşlem Bitiş"
               format="dd/MM/yyyy"
               placeholder=""
-              @change="currentPage = 1"
+              @change="changeDate"
               :disabled="filter.collectionDate"
             >
             </el-date-picker>
           </div>
-          <div class="col-2 col-sm-4 col-md-3 mb-3 pl-0">
-            <el-date-picker
-              class="w-full"
-              v-model="filter.collectionDate"
-              type="daterange"
-              range-separator="-"
-              start-placeholder="Tahsilat Başlangıç"
-              end-placeholder="Tahsilat Bitiş"
-              format="dd/MM/yyyy"
-              @change="currentPage = 1"
-              :disabled="filter.transactionDate"
-            >
-            </el-date-picker>
+          <div class="col-2 col-sm-4 col-md-3 mt-3 pl-0">
+            <el-radio-group v-model="filter.transactionType" size="small">
+              <el-radio :label="0">Satış</el-radio>
+              <el-radio :label="1">Tahsilat</el-radio>
+              <el-radio :label="null">Tümü</el-radio>
+            </el-radio-group>
+          </div>
+          <div class="col-3 col-sm-3 col-md-3 mt-3 ml-auto">
+            <div class="d-flex justify-content-end">
+              <h4 class="text-lg">Toplam Borç:</h4><span class="ml-2" style="font-size: 18px;">1.005.450,00 ₺</span>
+            </div>
           </div>
           <!-- filter end -->
 
-          <!-- listeki işlemin en günceli her zaman gösterilir -->
+          <!-- en son yapılan işlem satışsa art(+), tahsilatsa eksi(-) -->
+
+          <!-- yapılan her satış artı her tahsilat - olarak o müşterinin kalanına eklenecek -->
+           <!-- kalan borcu göstemesek daha pratik oluyor. yukarıda bi yerde remaining i gösteririz. işlem sonrası oraya ekler ya oradan düşer. -->
           <div class="col-12 grid-margin">
             <el-table
               ref="mainTable"
@@ -87,187 +64,161 @@
               style="width: 100%"
               show-summary
               :summary-method="getSummaries"
-              empty-text="Tahsilat Hareketi bulunamadı"
+              empty-text="Ekstre bulunamadı"
             >
-              <!-- @expand-change="onExpand" -->
-            <!-- size="mini" -->
-            <!-- :data=""scope.row.previousTransactions || [] -->
-              <el-table-column type="expand">
+              <el-table-column prop="transactionDate" label="İşlem Tarihi" width="120" sortable>
+                <template v-slot="scope">{{ scope.row.transactionDate | formatDate }}</template>
+              </el-table-column>
+              
+              <el-table-column prop="transactionType" label="İşlem Türü" width="120">
                 <template v-slot="scope">
-                  <div class="transaction-detail" :class="{'revise': getCurrentCompany}"> <!-- :class="{'revise': getCurrentCompany}" -->
-                    <el-table
-                      border
-                      :data="[
-                        ...(scope.row.previousTransactions || []),
-                        ...(tempTransactionId === scope.row.id && tempRows ? [tempRows[scope.row.id]] : [])
-                      ]"
-                      empty-text="Geçmiş işlem bulunamadı"
-                    >
-                      <!-- <el-table-column prop="createdDate" label="İşlem Tarihi" width="145">
-                        <template v-slot="scope2">
-                          <div v-if="tempRows[scope2.row.parentId] === scope2.row">
-                            <el-input type="date" v-model="tempRows[scope2.row.parentId].createdDate" />
-                          </div>
-                          <div v-else>
-                            {{ scope2.row.createdDate | formatDate }}
-                          </div>
-                        </template>
-                      </el-table-column>
-                      <el-table-column prop="sellAmount" label="Satış Tutarı" width="130">
-                        <template v-slot="scope2">
-                          <div v-if="tempRows[scope2.row.parentId] === scope2.row">
-                            <price-input v-model="tempRows[scope2.row.parentId].sellAmount" :postfix="false" :decimals="2" :min="0" />
-                           </div>
-                           <div v-else>
-                             {{ scope2.row.sellAmount | formatNumber }}
-                           </div>
-                        </template>
-                      </el-table-column> -->
-                      <el-table-column prop="collectionDate" label="Tahsilat Tarihi" width="145">
-                        <template v-slot="scope2">
-                          <div v-if="tempRows[scope2.row.parentId] === scope2.row">
-                            <el-input type="date" v-model="tempRows[scope2.row.parentId].collectionDate" />
-                          </div>
-                          <div v-else>
-                            {{ scope2.row.collectionDate | formatDate }}
-                          </div>
-                        </template>
-                      </el-table-column>
-                      <el-table-column prop="collectionAmount" label="Tahsilat Tutarı" width="137">
-                        <template v-slot="scope2">
-                          <div v-if="tempRows[scope2.row.parentId] === scope2.row">
-                            <price-input v-model="tempRows[scope2.row.parentId].collectionAmount" :postfix="false" :decimals="2" :min="0" />
-                           </div>
-                           <div v-else>
-                             {{ scope2.row.collectionAmount | formatNumber }}
-                           </div>
-                        </template>
-                      </el-table-column>
-                      <el-table-column prop="remaining" label="Kalan Borç" width="115">
-                        <template v-slot="scope2">
-                          <div v-if="tempRows[scope2.row.parentId] === scope2.row">
-                            <div v-if="calcTotalDebt(scope2)">
-                              {{ calcTotalDebt(scope2) | formatNumber }}
-                            </div>
-                            <label v-else class="badge badge-gradient-success">Ödendi</label>
-                           </div>
-                           <div v-else>
-                             {{ scope2.row.remaining | formatNumber }}
-                           </div>
-                        </template>
-                      </el-table-column>
-                      <el-table-column prop="outstandingDebt" label="Devreden Borç" width="140" sortable>
-                        <template><div></div></template>
-                      </el-table-column>
-                      <el-table-column prop="note" label="Not" width="87"><template><div></div></template></el-table-column>
-                      <!-- <el-table-column prop="note" label="Not" width="87">
-                        <template v-slot="scope">
-                          <el-tooltip class="item" effect="dark" :content="scope.row.note ? scope.row.note : 'Henüz not belirtilmedi'" placement="left">
-                            <div class="cursor gap-5">
-                              <i class="el-icon-info"></i>
-                              <span>Bilgi</span>
-                            </div>
-                          </el-tooltip>
-                        </template>
-                      </el-table-column> -->
-                      <el-table-column fixed="right" width="210">
-                        <template v-slot="scope2">
-                          <div v-if="tempRows[scope2.row.parentId] === scope2.row" class="d-flex align-items-center justify-content-end" style="padding-right: 7px">
-                            <el-button
-                              type="success"
-                              size="small"
-                              icon="el-icon-check"
-                              circle
-                              @click="saveNewProcess(scope.row)" 
-                              :disabled="(!tempRows[scope2.row.parentId].collectionAmount || calcTotalDebt(scope2) < 0)">
-                            </el-button>
-                            <el-button
-                              type="danger"
-                              size="small"
-                              icon="el-icon-close"
-                              circle
-                              @click="cancelProcess(scope.row)"></el-button>
-                           </div>
-                          <div v-else class="d-flex align-items-center justify-content-end" style="padding-right: 7px">
-                            <!-- <el-button type="primary" size="small" icon="el-icon-edit" circle
-                              @click="isOpenDialog('edit', scope.row, true)"></el-button> -->
-                            <el-button type="danger" size="small" icon="el-icon-delete" circle
-                              @click="open(scope.row)" :disabled="scope.row.totalOutputWeight > 0"></el-button>
-                          </div>
-                        </template>
-                      </el-table-column>
-                    </el-table>
-                  </div>
+                  <label v-if="scope.row.transactionType" class="badge badge-gradient-success">Tahsilat</label>
+                  <label v-else class="badge badge-gradient-info">Satış</label>
                 </template>
               </el-table-column>
 
-              <el-table-column v-if="!currentCustomerId" prop="companyName" label="Firma Adı" width="180">
-                <template v-slot="scope">{{ scope.row.companyName }}</template>
-              </el-table-column>
-
-              <el-table-column prop="fullName" label="Yetkili" width="160">
-                <template v-slot="scope">{{ scope.row.fullName }}</template>
-              </el-table-column>
-
-              <el-table-column prop="createdDate" label="İşlem Tarihi" width="145">
+              <el-table-column prop="sellAmount" label="Satış Tutarı" width="130">
                 <template v-slot="scope">
-                  {{ scope.row.transactionDate | formatDate }}
+                  <template v-if="scope.row.id == 'temp' && scope.row.transactionType === 0">
+                    <price-input v-model="scope.row.sellAmount" :decimals="2" :min="0" size="mini" />
+                  </template>
+                  <template v-else-if="scope.row.id == 'temp' && scope.row.transactionType === 1">-</template>
+                  <template v-else-if="scope.row.isEditing && scope.row.transactionType === 0">
+                    <price-input v-model="currentRow.sellAmount" :decimals="2" :min="0" size="mini" :placeholder="currentRow.placeholder" />
+                  </template>
+                  <template v-else>
+                    <span v-if="scope.row.transactionType">-</span>
+                    <span v-else>{{ scope.row.sellAmount | formatNumber }}</span>
+                  </template>
                 </template>
               </el-table-column>
 
-              <el-table-column prop="sellAmount" label="Satış Tutarı" width="130" sortable>
+              <el-table-column prop="collectionAmount" label="Tahsilat Tutarı" width="137">
                 <template v-slot="scope">
-                  {{ scope.row.sellAmount | formatNumber }}
-                </template>
-              </el-table-column>
-
-              <el-table-column prop="collectionDate" label="Tahsilat Tarihi" width="145">
-                <template v-slot="scope">
-                  {{ scope.row.collectionDate | formatDate }}
-                </template>
-              </el-table-column>
-
-              <el-table-column prop="collectionAmount" label="Tahsilat Tutarı" width="137" sortable>
-                <template v-slot="scope">
-                  {{ scope.row.collectionAmount | formatNumber }}
-                </template>
-              </el-table-column>
-
-              <el-table-column prop="remaining" label="Kalan Borç" sortable width="115">
-                <template v-slot="scope">
-                  {{ scope.row.remaining | formatNumber }}
+                  <template v-if="scope.row.id == 'temp' && scope.row.transactionType === 1">
+                    <price-input v-model="scope.row.collectionAmount" :decimals="2" :min="0" size="mini" />
+                  </template>
+                  <template v-else-if="scope.row.id == 'temp' && scope.row.transactionType === 0">-</template>
+                  <template v-else-if="scope.row.isEditing && scope.row.transactionType === 1">
+                    <price-input v-model="currentRow.collectionAmount" :decimals="2" :min="0" size="mini" :placeholder="currentRow.placeholder" />
+                  </template>
+                  <template v-else>
+                    <span v-if="scope.row.transactionType">{{ scope.row.collectionAmount | formatNumber }}</span>
+                    <span v-else>-</span>
+                  </template>
                 </template>
               </el-table-column>
               
-              <el-table-column prop="outstandingDebt" label="Devreden Borç" width="140" sortable>
+              <el-table-column prop="collectionType" label="Tahsilat Türü" width="145">
                 <template v-slot="scope">
-                  <label v-if="scope.row.outstandingDebt" class="badge badge-gradient-danger">
-                    {{ scope.row.outstandingDebt | formatNumber }}
-                  </label>
-                  <div v-else>
-                    {{ scope.row.outstandingDebt | formatNumber }}
-                  </div>
+                  <template v-if="scope.row.id == 'temp' && scope.row.transactionType === 1">
+                    <el-select
+                      v-model="scope.row.collectionType"
+                      filterable
+                      clearable
+                    >
+                      <el-option
+                        v-for="item in collectionTypeList"
+                        :key="item.value"
+                        :label="item.label"
+                        :value="item.value"
+                      >
+                      </el-option>
+                    </el-select>
+                  </template>
+                  <template v-else-if="scope.row.isEditing">
+                    <el-select
+                      v-model="currentRow.collectionType"
+                      filterable
+                      clearable
+                    >
+                      <el-option
+                        v-for="item in collectionTypeList"
+                        :key="item.value"
+                        :label="item.label"
+                        :value="item.value"
+                      >
+                      </el-option>
+                    </el-select>
+                  </template>
+                  <template v-else>
+                    {{ scope.row.collectionType ? scope.row.collectionType : '-'}}
+                  </template>
                 </template>
               </el-table-column>
 
-              <el-table-column prop="note" label="Not">
+              <!-- <el-table-column prop="remaining" label="Kalan Borç">
                 <template v-slot="scope">
-                  <el-tooltip class="item" effect="dark" :content="scope.row.note ? scope.row.note : 'Henüz not belirtilmedi'" placement="left">
+                  <template v-if="scope.row.id == 'temp' && scope.row.transactionType === 0">
+                    {{ (scope.row.sellAmount + getCurrentRemaining) | formatNumber }}
+                  </template>
+                  <template v-else-if="scope.row.id == 'temp' && scope.row.transactionType === 1">
+                    {{ scope.row.collectionAmount ? ((getCurrentRemaining - scope.row.collectionAmount)  | formatNumber ) : getCurrentRemaining | formatNumber}}
+                  </template>
+                  <template v-else-if="scope.row.isEditing && scope.row.transactionType === 0">
+                    {{ (currentRow.sellAmount + getCurrentRemaining) | formatNumber }}
+                  </template>
+                  <template v-else-if="scope.row.isEditing && scope.row.transactionType === 1">
+                    {{ currentRow.collectionAmount ? ((getCurrentRemaining - currentRow.collectionAmount)  | formatNumber ) : getCurrentRemaining | formatNumber}}
+                  </template>
+                  <template v-else>
+                    {{ scope.row.remaining | formatNumber }}
+                  </template>
+                </template>
+              </el-table-column> -->
+              <el-table-column prop="note" label="Açıklama">
+                <template v-slot="scope">
+                  <template v-if="scope.row.id == 'temp'">
+                    <el-input
+                      type="textarea"
+                      class="no-resize-textarea"
+                      v-model="scope.row.note"
+                      placeholder="Açıklama girin"
+                      :autosize="false"
+                    ></el-input>
+                  </template>
+                  <template v-else-if="scope.row.isEditing">
+                    <el-input
+                      type="textarea"
+                      class="no-resize-textarea"
+                      v-model="currentRow.note"
+                      placeholder="Açıklama girin"
+                      :autosize="false"
+                    ></el-input>
+                  </template>
+                  <template v-else>
+                    <div>{{scope.row.note}}</div>
+                  </template>
+                  <!-- <el-tooltip v-else class="item" effect="dark" :content="scope.row.note ? scope.row.note : 'Henüz açıklama belirtilmedi'" placement="left">
                     <div class="cursor gap-5">
                       <i class="el-icon-info"></i>
                       <span>Bilgi</span>
                     </div>
-                  </el-tooltip>
+                  </el-tooltip> -->
                 </template>
               </el-table-column>
 
-              <el-table-column fixed="right" label="İşlem" width="220">
+              <el-table-column fixed="right" label="İşlem" width="100">
                 <template v-slot="scope">
-                  <el-button type="success" size="small" icon="el-icon-circle-plus"
-                    @click="addNewRow(scope.row)" :disabled="(scope.row.id === tempTransactionId) || (scope.row.remaining === 0 && scope.row.outstandingDebt === 0)">Yeni İşlem</el-button> <!-- isOpenDialog('add', scope.row) - addNewRow(scope.row.id) -->
-                  <el-button type="primary" size="small" icon="el-icon-edit" circle
-                    @click="isOpenDialog('edit', scope.row)"></el-button>
-                  <el-button type="danger" size="small" icon="el-icon-delete" circle
+                  <el-button
+                    v-if="scope.row.id == 'temp'"
+                    type="success"
+                    size="small"
+                    icon="el-icon-check"
+                    circle
+                    @click="saveTempRow(scope.row)" 
+                    :disabled="checkValidation(scope.row)">
+                  </el-button>
+                  <el-button v-else-if="scope.row.isEditing" type="success" size="small" icon="el-icon-check" circle @click="saveChanges(scope.row)"></el-button> <!-- isOpenDialog('edit', scope.row) -->
+                  <el-button v-else type="primary" size="small" icon="el-icon-edit" circle @click="editRow(scope.row)"></el-button> 
+                  <el-button
+                    v-if="scope.row.id == 'temp' || scope.row.isEditing"
+                    type="danger"
+                    size="small"
+                    icon="el-icon-close"
+                    circle
+                    @click="cancelTempRow(scope.row)"></el-button>
+                  <el-button v-else type="danger" size="small" icon="el-icon-delete" circle
                     @click="open(scope.row)" :disabled="scope.row.totalOutputWeight > 0"></el-button>
                 </template>
               </el-table-column>
@@ -286,109 +237,6 @@
         </div>
       </div>
     </div>
-
-    <el-dialog
-      title="Rota oluştur"
-      :visible.sync="createRouteDialog"
-      width="45%"
-      @close="closeRouteDialog"
-    >
-      <el-form label-position="top" :model="formData" label-width="100px">
-        <el-row :gutter="20">
-          <el-col :span="8">
-            <el-form-item class="mb-0" label="Grup Seçin">
-              <el-select
-                class="w-full"
-                v-model="filter.groupForRoute"
-                filterable
-                clearable
-                placeholder="Grup adı ile ara"
-              >
-                <el-option
-                  v-for="item in getGroupList"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value"
-                >
-                </el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="9">
-            <el-form-item class="mb-0" label="Rota Tipi">
-              <el-radio-group v-model="filter.visitType" size="small">
-                <el-radio :label="1">Tahsilat</el-radio>
-                <el-radio label="Tümü">Tümü</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
-          <!-- <el-col :span="8">
-            <el-form-item class="mb-0" label="Devredenler Dahil Edilsin Mi?">
-              <el-radio-group v-model="filter.isOutstandingDebt" size="small">
-                <el-radio :label="1">Evet</el-radio>
-                <el-radio :label="0">Hayır</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col> -->
-        </el-row>
-      </el-form>
-
-      <hr>
-
-      <el-row :gutter="16">
-        <el-col :span="13">
-          <el-alert
-            v-if="filter.groupForRoute"
-            title="Seçilen gruba ait müşterilerin rotası, aşağıdaki gibidir."
-            type="info"
-            :closable="false"
-            show-icon
-            class="mb-4">
-          </el-alert>
-        </el-col>
-      </el-row>
-      
-      <el-table
-        :data="getRouteList"
-        border
-        style="width: 100%"
-        show-summary
-        :summary-method="getSummariesRoute"
-        empty-text="Rota için müşteri bulunamadı!">
-        <el-table-column prop="companyName" label="Firma" width="180">
-        </el-table-column>
-        <el-table-column prop="transactionDate" label="İşlem Tarihi">
-        </el-table-column>
-        <el-table-column prop="sellAmount" label="Satış Tutarı">
-          <template v-slot="scope">
-            {{ scope.row.sellAmount | formatNumber }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="collectionDate" label="Tahs. Tarihi">
-        </el-table-column>
-        <el-table-column prop="collectionAmount" label="Tahs. Tutarı">
-          <template v-slot="scope">
-            {{ scope.row.collectionAmount }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="remaining" label="Önceki Borç">
-          <template v-slot="scope">
-            {{ scope.row.remaining | formatNumber }}
-          </template>
-        </el-table-column>
-        <!-- <el-table-column
-          prop="outstandingDebt"
-          label="Devreden">
-          <template v-slot="scope">
-            {{ scope.row.outstandingDebt | formatNumber }}
-          </template>
-        </el-table-column> -->
-      </el-table>
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="createRouteDialog = false">Vazgeç</el-button>
-        <el-button type="primary" icon="el-icon-printer" @click="printRoute" :disabled="!getRouteList.length">Çıktı Al</el-button>
-      </span>
-    </el-dialog>
 
     <div id="print-area" style="display:none;">
       <table class="print-table">
@@ -424,7 +272,7 @@
       @close="closePopup"
     >
       <el-form label-position="top" :model="formData" label-width="100px">
-        <h4 class="mb-3">{{ getCurrentCompany.replace('-', '') }}</h4>
+        <h4 class="mb-3"></h4>
         <!-- <el-alert
           v-if="!isEditMode"
           title="Bu ekranda, yeni satış ya da tahsilat işlemi yapabilirsiniz."
@@ -521,7 +369,7 @@
 </template>
 
 <script>
-import transactions from "@/mock/transactions.json";
+import data from "@/mock/transactions.json";
 import { formatNumber } from '@/util/helpers';
 import PriceInput from '@/components/forms/PriceInput.vue';
 import globalMixin from '@/mixins/global.mixin.js';
@@ -540,24 +388,32 @@ export default {
     return {
       pageSize: 9,
       currentPage: 1,
-      currentCustomerId: null,
+      currentCustomer: {
+        id: null,
+        currentCompany: ""
+      },
       dialogVisible: false,
-      createRouteDialog: false,
       filter: {
-        transactionDateStart: "",
-        transactionDateEnd: "",
-        collectionDateStart: "",
-        collectionDateEnd: "",
+        transactionType: null,
+        transactionDate: "",
         search: "",
         group: "",
         groupForRoute: "",
-        visitType: "Tümü",
-        isOutstandingDebt: 0,
+        visitType: "Tümü"
       },
+      tempRow: null,
+      disableAdd: false,
+      collectionTypeList: [
+        { label: "Nakit", value: "NAKIT" },
+        { label: "Kredi Kartı", value: "KREDI" },
+        { label: "Havale/EFT", value: "HAVALE" }
+      ],
       exportTableData: [],
-      tempRows: {},
       tempTransactionId: null,
       isEditMode: false,
+      currentRow: {},
+      transactions: [],
+      currentRemaining: 0,
       isTransactionsDetail: false,
       formData: {
         companyName: '',
@@ -572,26 +428,62 @@ export default {
     }
   },
   mounted () {
-    this.currentCustomerId = this.$route.query?.q;
+    const { q, cn } = this.$route.query;
+    this.currentCustomer.id = q;
+    this.currentCustomer.currentCompany = cn;
+
+    if (Array.isArray(data)) {
+      // eğer mock tüm müşterilerin listesi ise (her item.transactions içerir)
+      // bizim ekran burada tek bir müşterinin ekstresini gösteriyorsa
+      // currentCustomer.id ile eşleşeni çekebiliriz:
+      if (this.currentCustomer.id) {
+        const matched = data.find(d => String(d.customerId) === String(this.currentCustomer.id));
+        if (matched) {
+          this.transactions = (matched.transactions || []).map(t => ({ ...t, isEditing: false }));
+          this.currentRemaining = matched.remaining || 0;
+        } else {
+          // fallback: tüm first customer's transactions
+          this.transactions = (data[0]?.transactions || []).map(t => ({ ...t, isEditing: false }));
+          this.currentRemaining = data[0]?.remaining || 0;
+        }
+      } else {
+        // eğer query yoksa genel davranış: ilk elemanı al
+        this.transactions = (data[0]?.transactions || []).map(t => ({ ...t, isEditing: false }));
+        this.currentRemaining = data[0]?.remaining || 0;
+      }
+    } else if (data && typeof data === 'object') {
+      // dosya tek bir müşteri objesi (senin paylaştığın format)
+      this.transactions = (data.transactions || []).map(t => ({ ...t, isEditing: false }));
+      this.currentRemaining = data.remaining || 0;
+    } else {
+      this.transactions = [];
+      this.currentRemaining = 0;
+    }
   },
   computed: {
     getPopupTitle() {
       return this.isEditMode ? 'Hareketi Düzenle' : 'Yeni Satış Oluştur';
     },
     getTransactionList() {
-      return transactions;
+      return this.transactions || [];
+    },
+    getCurrentRemaining() {
+      return data.remaining;
     },
     checkOutstandingDebt() {
       return this.isEditMode ? !this.isTransactionsDetail : "";
     },
     paginatedData() {
-      const start = (this.currentPage - 1) * this.pageSize
-      const end = start + this.pageSize
-      return this.filteredData?.slice(start, end);
+      const list = this.filteredData || [];
+      const fullList = this.tempRow ? [this.tempRow, ...list] : list;
+
+      const start = (this.currentPage - 1) * this.pageSize;
+      const end = start + this.pageSize;
+
+      return fullList.slice(start, end);
     },
-    calcTotalDebt() {
-      return (scope2) => this.tempRows[scope2.row.parentId].remaining - this.tempRows[scope2.row.parentId].collectionAmount;
-      /* return (scope, scope2) => this.tempRows.length > 1 ? this.tempRows[scope2.row.parentId].remaining - this.tempRows[scope2.row.parentId].collectionAmount : scope.remaining - this.tempRows[scope2.row.parentId]?.collectionAmount; */
+    checkValidation() {
+      return row => row.transactionType == 0 ? !row.sellAmount : (row.collectionAmount == 0 || row.collectionType == null);
     },
     getRouteList() {
       return this.exportTableData.filter(item => {
@@ -618,27 +510,54 @@ export default {
       return today;
     },
     filteredData() {
+      /* let list = this.getTransactionList.filter(extract => extract.customerId == this.currentCustomer.id) || []; */
       let list = this.getTransactionList || [];
 
-      if (this.currentCustomerId) {
+      // Grup filtresi
+      /* if (this.filter.group) {
         list = list.filter(
-          item => String(item.customerId) === String(this.currentCustomerId)
+          item => String(item.customerId) === String(this.filter.group)
+        );
+      } */
+
+      // İşlem tipi filtresi
+      if (this.filter.transactionType !== null && this.filter.transactionType !== undefined) {
+        list = list.filter(
+          item => Number(item.transactionType) === Number(this.filter.transactionType)
         );
       }
 
-      if (this.filter.group) {
-        list = list.filter(
-          item => String(item.companyId) === String(this.filter.group)
-        );
+      // Tarih aralığı filtresi (baş. <= işlem tarihi <= bitiş)
+      if (this.filter.transactionDate && Array.isArray(this.filter.transactionDate) && this.filter.transactionDate.length === 2) {
+        const [rawStart, rawEnd] = this.filter.transactionDate;
+
+        // rawStart / rawEnd Date objesi veya ISO string olabilir
+        const startDate = rawStart ? new Date(rawStart) : null;
+        const endDate = rawEnd ? new Date(rawEnd) : null;
+
+        if (startDate && !isNaN(startDate.getTime()) && endDate && !isNaN(endDate.getTime())) {
+          // start günün başı, end günün sonu (kullanıcının local zamanına göre)
+          const startTs = new Date(startDate.setHours(0, 0, 0, 0)).getTime();
+          const endTs = new Date(endDate.setHours(23, 59, 59, 999)).getTime();
+
+          list = list.filter(item => {
+            if (!item.transactionDate) return false;
+            const t = new Date(item.transactionDate);
+            if (isNaN(t.getTime())) return false;
+            const tTs = t.getTime();
+            return tTs >= startTs && tTs <= endTs;
+          });
+        }
       }
 
+      // Arama filtresi
       if (!this.filter.search) {
         return list;
       }
 
       const search = this.filter.search.toLowerCase();
       return list.filter(item =>
-        `${item.fullName} ${item.companyName}`.toLowerCase().includes(search)
+        `${item.note}`.toLowerCase().includes(search)
       );
     },
     calcRemaining() {
@@ -648,76 +567,59 @@ export default {
       return this.calcRemaining + this.formData.outstandingDebt;
     },
     getCurrentCompany() {
-      const companyName = this.paginatedData.filter(t => t.customerId == this.currentCustomerId)[0]?.companyName;
-      return companyName ? `${companyName}` : '';
+      return this.currentCustomer.currentCompany;
     }
   },
   methods: {
-    handlePageChange(page) {
-      this.currentPage = page;
-    },
-    cancelProcess(row) {
-      this.expand(row, false);
-      this.tempTransactionId = null;
-    },
-    saveNewProcess(row) {
-      this.expand(row, false);
-      this.$notify.success({
-        title: 'Başarılı',
-        message: 'İşlem Gerçekleştirildi'
+    changeDate(val) {
+      this.currentPage = 1;
+      this.filter.transactionDate = val.map(d => {
+        const newDate = new Date(d);
+        newDate.setHours(12, 0, 0, 0);
+        return newDate;
       });
     },
-    async printRoute() {
-      const grouped = this.getRouteList.reduce((acc, item) => {
-        if (!acc[item.companyName]) acc[item.companyName] = [];
+    async exportExtract() {
+      const list = this.filteredData;
 
-        acc[item.companyName].push(item);
-        return acc;
-      }, {});
+      const totalSale = list?.reduce((acc, item) => item.sellAmount + acc, 0);
+      const totalCollection = list?.reduce((acc, item) => item.collectionAmount + acc, 0);
 
       const body = [
         [
-          "Firma",
-          "İşlem Tarihi",
-          "Satış Tutarı",
-          "Tahs. Tarihi",
-          "Tahs. Tutarı",
-          "Kalan",
-          "Açıklama"
+          { text: "İşlem Tarihi", bold: true },
+          { text: "İşlem Türü", bold: true },
+          { text: "Satış Tutarı", bold: true },
+          { text: "Tahs. Tutarı", bold: true },
+          { text: "Tahsilat Türü", bold: true }
         ]
       ];
 
-      Object.keys(grouped).forEach(company => {
-        const list = grouped[company];
-        const head = list[0];
-
+      list.forEach(extract => {
         body.push([
-          head.companyName,
-          "",
-          "",
-          "",
-          "",
-          "",
-          { text: head.note || "", rowSpan: 2, alignment: 'center' }
-        ]);
-
-        const totalAmount = list.reduce((sum, item) => sum + (item.sellAmount || 0), 0);
-        const totalRemainingResult = list.reduce((sum, item) => sum + (item.remaining || 0), 0);
-        
-        const pastDates = [...list.map(i => i.transactionDate), { text: "Toplam", bold: true }]
-        const pastAmounts = [...list.map(i => this.$options.filters.formatNumber(i.sellAmount)), { text: this.$options.filters.formatNumber(totalAmount), bold: true }]
-        const totalRemaining = [...list.map(i => this.$options.filters.formatNumber(i.remaining)), { text: this.$options.filters.formatNumber(totalRemainingResult), bold: true }];
-        
-        body.push([
-          "",
-          pastDates,
-          pastAmounts,
-          "",
-          "",
-          totalRemaining,
-          "",
+          { text: this.$options.filters.formatDate(extract.transactionDate)},
+          { text: extract.transactionType ? 'Tahsilat' : 'Satış' },
+          { text: extract.transactionType ? '-' : this.$options.filters.formatNumber(extract.sellAmount)},
+          { text: extract.transactionType ? this.$options.filters.formatNumber(extract.collectionAmount) : '-'},
+          { text: extract.collectionType }
         ]);
       });
+      
+      body.push([
+        { text: " ", colSpan: 5 },
+        " ",
+        " ",
+        " ",
+        " "
+      ]);
+
+      body.push([
+        "",
+        { text: "Toplam:", alignment: "left", bold: true, fillColor: '#ddd' },
+        { text: `${this.$options.filters.formatNumber(totalSale)} ₺`, bold: true },
+        { text: `${this.$options.filters.formatNumber(totalCollection)} ₺`, bold: true },
+        { text: `Kalan: ${this.$options.filters.formatNumber(totalSale - totalCollection)} ₺`, bold: true, fillColor: '#ddd' },
+      ]);
 
       async function toBase64(url) {
         const res = await fetch(url);
@@ -739,11 +641,11 @@ export default {
             alignment: 'center',
             margin: [0, -20, 0, 0]
           },
-          { text: "", style: "header" },
+          { text: `[${this.currentCustomer.currentCompany} - Ekstre]`, style: "zoneName" },
           {
             table: {
               headerRows: 1,
-              widths: [100, 55, "*", 55, "*", "*", 80],
+              widths: [80, 80, 80, 80, "*"],
               body
             },
             layout: {
@@ -755,59 +657,103 @@ export default {
         styles: {
           header: {
             bold: false,
-            margin: [0, 0, 0, 10],
+            margin: [-30, 0, -30, 10],
             alignment: 'center'
+          },
+          zoneName: {
+            bold: true,
+            margin: [0, 0, 0, 10],
+            alignment: 'left'
           }
         }
       };
 
-      pdfMake.createPdf(docDefinition).open();
-    },
-    openCreateRouteDialog() {
-      this.createRouteDialog = true;
-      this.exportTableData = this.getTransactionList.map(item => ({
-        companyName: item.companyName,
-        transactionDate: this.$options.filters.formatDate(item.transactionDate),
-        sellAmount: item.sellAmount,
-        collectionDate: this.$options.filters.formatDate(item.collectionDate),
-        collectionAmount: this.$options.filters.formatNumber(item.collectionAmount),
-        remaining: item.remaining,
-        outstandingDebt: this.$options.filters.formatNumber(item.outstandingDebt),
-        currentDebt: "",
-        group: item.group,
-        previousTransactions: item?.previousTransactions?.slice()
-      }));
-      this.filter.groupForRoute = this.todayGroupNumber;
-    },
-    addNewRow(row) {
-      const id = row.id;
-      this.tempTransactionId = id;
-      this.$set(this.tempRows, id, {
-        parentId: id,
-        sellAmount: null,
-        collectionDate: new Date().toLocaleDateString('en-CA'),
-        collectionAmount: null,
-        remaining: row.remaining || row.outstandingDebt
-        /* row.previousTransactions[row.previousTransactions.length -1]?.remaining || 0 */
-      });
-
-      this.expand(row);
-    },
-    expand(row, status = true) {
-      if (!status) {
-        this.tempRows = {};
-        this.tempTransactionId = null;
+      let dateBetween;
+      if (this.filter.transactionDate?.length) {
+        dateBetween = this.filter.transactionDate?.map(date => this.$options.filters.formatDate(date)).join(" - ")
+        docDefinition.content.splice(2, 0, { text: `[${dateBetween}]`, style: "zoneName" });
       }
 
-      this.$nextTick(() => {
-        this.$refs.mainTable.toggleRowExpansion(row, status);
+      pdfMake.createPdf(docDefinition).open();
+    },
+    handlePageChange(page) {
+      this.currentPage = page;
+    },
+    cancelTempRow(row) {
+      this.tempRow = null;
+      this.disableAdd = false;
+      row.isEditing = false;
+    },
+    saveChanges(row) {
+      row.isEditing = false;
+
+      this.$notify.success({
+        title: 'Başarılı',
+        message: 'İşlem Gerçekleştirildi'
       });
+    },
+    editRow(row) {
+      this.getTransactionList.forEach(r => (r.isEditing = false));
+      row.isEditing = true;
+
+      this.currentRow = row.transactionType ? {
+        collectionAmount: null,
+        collectionType: row.collectionType,
+        placeholder: row.collectionAmount,
+        note: row.note
+      } : {
+        sellAmount: null,
+        placeholder: row.sellAmount,
+        note: row.note
+      }
+    },
+    newRecord(type) {
+      if (this.tempRow) return;
+      this.disableAdd = true;
+
+      this.tempRow = {
+        id: "temp",
+        companyId: this.currentCustomer.id,
+        companyName: "",
+        sellAmount: 0,
+        fullName: "",
+        collectionAmount: 0,
+        transactionType: type ? 1 : 0,
+        amount: null,
+        description: "",
+        transactionDate: new Date().toISOString(),
+        remaining: null,
+
+        collectionType: null, 
+        collectionTypeName: "",
+      };
+    },
+    saveTempRow(row) {
+      const newId = Math.floor(Math.random() * 999999);
+
+      const newRecord = {
+        ...row,
+        id: newId,
+        isEditing: false,
+        collectionTypeName:
+          row.transactionType === 1
+            ? (row.collectionType === 0 ? "Nakit" : "Kredi Kartı")
+            : "",
+      };
+
+      this.transactions.unshift(newRecord);
+      localStorage.setItem("payload", newRecord);
+
+      this.$notify.success({
+        title: 'Başarılı',
+        message: 'İşlem Gerçekleştirildi'
+      });
+
+      this.tempRow = null;
+      this.disableAdd = false;
     },
     closePopup() {
       this.dialogVisible = false;
-    },
-    closeRouteDialog() {
-      this.createRouteDialog = false;
     },
     isOpenDialog(type, row = {}, isChild = false) {
       this.isEditMode = type === 'edit';
@@ -840,34 +786,40 @@ export default {
         ...row,
       };
     },
-    newRecord() {
-      /* dialog açmalı; İşlem tarihi, satış tutarı, tahsilat tarihi, tahsilat tutarı girilecek. anlık kalan görünüyor olacak. ek olarak devreden de disable görünse iyi olur. */
-      /* this.$router.push({ name: 'transaction-detail', params: { id } }); */
-    },
     getSummaries(param) {
       const { columns } = param;
       const sums = [];
 
+      // Listenin son elemanının remaining değeri
+      const totalRemaining = Number(this.filteredData[this.filteredData.length - 1]?.remaining || 0);
+
       columns.forEach((column, index) => {
-        if (index === 1) {
+        if (index === 0) {
           sums[index] = 'Toplam';
           return;
         }
-        
+
+        const prop = column?.property;
+
         const isCalculatable =
-          column?.property &&
-          (column.property.includes('sellAmount') ||
-          column.property.includes('collectionAmount') ||
-          column.property.includes('remaining') ||
-          column.property.includes('outstandingDebt'));
-        
+          prop &&
+          (prop.includes('sellAmount') ||
+          prop.includes('collectionAmount') ||
+          prop.includes('remaining'));
+
         if (isCalculatable) {
-          const values = this.filteredData?.map(item => Number(item[column.property]));
-          const total = values?.reduce((prev, curr) => {
-            const value = Number(curr);
-            return !isNaN(value) ? prev + value : prev;
+          // remaining kolonu için reduce yapılmayacak
+          if (prop === 'remaining') {
+            sums[index] = formatNumber(totalRemaining) + ' ₺';
+            return;
+          }
+
+          // Diğer kolonlar normal şekilde toplanır
+          const total = this.filteredData.reduce((prev, curr) => {
+            const val = Number(curr[prop]);
+            return isNaN(val) ? prev : prev + val;
           }, 0);
-  
+
           sums[index] = formatNumber(total) + ' ₺';
         } else {
           sums[index] = '';
@@ -910,10 +862,10 @@ export default {
     "$route": {
       handler(value) {
         if (value.query?.q) {
-          this.currentCustomerId = value.query.q;
+          this.currentCustomer.id = value.query.q;
           return;
         }
-        this.currentCustomerId = null;
+        this.currentCustomer.id = null;
       },
       immediate: true,
       deep: true
@@ -924,6 +876,10 @@ export default {
 
 <style lang="scss" scoped>
 ::v-deep {
+  .badge {
+    font-size: 12px;
+    width: 100px;
+  }
   .w-full {
     width: 100%;
   }
@@ -951,6 +907,12 @@ export default {
     justify-content: flex-end;
     gap: 10px;
     margin-top: 50px;
+  }
+  .no-resize-textarea {
+    min-height: 33px;
+    textarea {
+      height: 38px !important;
+    }
   }
 }
 </style>

@@ -5,7 +5,7 @@ export default {
         getGroupNameList() {
             return groupId => GROUP_NAME_LIST[groupId] || 'Bilinmiyor';
         },
-        getGroupList() {
+        getZoneList() {
             return Object.entries(GROUP_NAME_LIST).map(([value, label]) => ({
               label,
               value: Number(value)

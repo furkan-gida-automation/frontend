@@ -10,7 +10,9 @@
       "note": "Özel müşteri",
       "group": 1,
       "isProcess": true,
-      "debt": 1000
+      "totalSale": 3000,
+      "totalCollection": 1000,
+      "totalDebt": 5450
     },
     {
       "id": 2,
@@ -23,7 +25,9 @@
       "note": "Özel müşteri",
       "group": 2,
       "isProcess": false,
-      "debt": 1.20
+      "totalSale": 2000,
+      "totalCollection": 1000,
+      "totalDebt": 1.20
     },
     {
       "id": 3,
@@ -36,7 +40,9 @@
       "note": "Özel müşteri",
       "group": 4,
       "isProcess": true,
-      "debt": 0
+      "totalSale": 2000,
+      "totalCollection": 1000,
+      "totalDebt": 0
     },
     {
       "id": 4,
@@ -49,7 +55,9 @@
       "note": "Özel müşteri",
       "group": 1,
       "isProcess": true,
-      "debt": 0
+      "totalSale": 2000,
+      "totalCollection": 1000,
+      "totalDebt": 1000
     },
     {
       "id": 5,
@@ -62,7 +70,9 @@
       "note": "Özel müşteri",
       "group": 4,
       "isProcess": true,
-      "debt": 0
+      "totalSale": 2000,
+      "totalCollection": 1000,
+      "totalDebt": 4000
     },
     {
       "id": 6,
@@ -75,7 +85,9 @@
       "note": "Özel müşteri",
       "group": 2,
       "isProcess": true,
-      "debt": 0
+      "totalSale": 2000,
+      "totalCollection": 1000,
+      "totalDebt": 0
     },
     {
       "id": 7,
@@ -88,7 +100,9 @@
       "note": "Özel müşteri",
       "group": 6,
       "isProcess": true,
-      "debt": 0
+      "totalSale": 2000,
+      "totalCollection": 1000,
+      "totalDebt": 0
     },
     {
       "id": 8,
@@ -101,7 +115,9 @@
       "note": "Özel müşteri",
       "group": 5,
       "isProcess": true,
-      "debt": 0
+      "totalSale": 2000,
+      "totalCollection": 1000,
+      "totalDebt": 0
     },
     {
       "id": 9,
@@ -114,7 +130,9 @@
       "note": "Özel müşteri",
       "group": 5,
       "isProcess": true,
-      "debt": 0
+      "totalSale": 2000,
+      "totalCollection": 1000,
+      "totalDebt": 8400
     },
     {
       "id": 10,
@@ -127,7 +145,9 @@
       "note": "Özel müşteri",
       "group": 1,
       "isProcess": true,
-      "debt": 0
+      "totalSale": 2000,
+      "totalCollection": 1000,
+      "totalDebt": 0
     },
     {
       "id": 11,
@@ -140,7 +160,9 @@
       "note": "Özel müşteri",
       "group": 5,
       "isProcess": true,
-      "debt": 1
+      "totalSale": 2000,
+      "totalCollection": 1000,
+      "totalDebt": 1
     },
     {
       "id": 12,
@@ -153,7 +175,9 @@
       "note": "Özel müşteri",
       "group": 4,
       "isProcess": true,
-      "debt": 0
+      "totalSale": 2000,
+      "totalCollection": 1000,
+      "totalDebt": 0
     },
     {
       "id": 13,
@@ -166,7 +190,9 @@
       "note": "Özel müşteri",
       "group": 2,
       "isProcess": true,
-      "debt": 0
+      "totalSale": 2000,
+      "totalCollection": 1000,
+      "totalDebt": 0
     },
     {
       "id": 14,
@@ -179,7 +205,9 @@
       "note": "Özel müşteri",
       "group": 3,
       "isProcess": true,
-      "debt": 0
+      "totalSale": 2000,
+      "totalCollection": 1000,
+      "totalDebt": 0
     }
   ]
   

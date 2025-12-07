@@ -22,6 +22,7 @@
       min: { type: Number, default: 0 },
       disabled: { type: Boolean, default: false },
       postfix: { type: Boolean, default: true },
+      placeholder: { type: [String, Number] },
     },
     data() {
       return {
@@ -105,6 +106,7 @@
         this.display = this.formatForDisplay(clamped);
       },
       formatForDisplay(n) {
+        n = n ? n : this.placeholder;
         const num = Number(isNaN(n) ? 0 : n);
         return new Intl.NumberFormat("tr-TR", {
           minimumFractionDigits: this.decimals,

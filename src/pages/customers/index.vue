@@ -8,7 +8,10 @@
           </span>
           Tüm Müşteriler ({{filteredData.length}})
         </div>
-        <el-button type="success" size="medium" icon="el-icon-circle-plus" @click="isOpenDialog('add')">Müşteri Oluştur</el-button>
+        <div>
+          <el-button type="success" size="medium" icon="el-icon-location-outline" @click="openCreateRouteDialog">Rota Oluştur</el-button>
+          <el-button type="success" size="medium" icon="el-icon-circle-plus" @click="isOpenDialog('add')">Müşteri Oluştur</el-button>
+        </div>
       </h3>
       <!-- liste gruplar halinde gösteribilir group by gibi -->
     </div>
@@ -28,11 +31,11 @@
               v-model="filter.group"
               filterable
               clearable
-              placeholder="Grup seçin"
+              placeholder="Bölge seçin"
               @change="currentPage = 1"
             >
               <el-option
-                v-for="item in getGroupList"
+                v-for="item in getZoneList"
                 :key="item.value"
                 :label="item.label"
                 :value="item.value"
@@ -59,20 +62,25 @@
                 </template>
               </el-table-column>
               <el-table-column prop="phone" label="Telefon" width="115"></el-table-column>
-              <el-table-column prop="address" label="Adres"></el-table-column>
-              <el-table-column prop="createdDate" label="Oluşturulma Zamanı" width="150">
-                <template v-slot="scope">
-                  <center>{{ scope.row.createdDate | formatDate }}</center>
-                </template>
-              </el-table-column>
-              <el-table-column prop="group" label="Rota Grubu" sortable>
+              <el-table-column prop="group" label="Bölge" sortable>
                 <template v-slot="scope">
                   {{ getGroupNameList(scope.row.group) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="debt" label="Güncel Borç" sortable>
+              <el-table-column prop="totalSale" label="Toplam Satış" sortable>
                 <template v-slot="scope">
-                  {{ scope.row.debt | formatNumber }}
+                  {{ scope.row.totalSale | formatNumber }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="totalCollection" label="Toplam Tahsilat" sortable width="150">
+                <template v-slot="scope">
+                  {{ scope.row.totalCollection | formatNumber }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="totalDebt" label="Toplam Borç" sortable>
+                <template v-slot="scope">
+                  <label v-if="scope.row.totalDebt > 0" class="badge badge-danger">{{ scope.row.totalDebt | formatNumber }}₺</label>
+                  <label v-else class="badge badge-gradient-success">Ödendi</label>
                 </template>
               </el-table-column>
               <el-table-column prop="note" label="Not">
@@ -85,12 +93,12 @@
                   </el-tooltip>
                 </template>
               </el-table-column>
-              <el-table-column fixed="right" label="İşlem" width="225">
+              <el-table-column fixed="right" label="İşlem" width="190">
                 <template v-slot="scope">
                   <div class="process">
-                    <el-button v-if="scope.row.isProcess" type="success" size="small" icon="el-icon-notebook-2" @click="handleClick(scope.row.id)">İşlemleri Gör</el-button>
+                    <el-button v-if="scope.row.isProcess" type="success" size="small" icon="el-icon-notebook-2" @click="handleClick(scope.row)">Hesap Ekstresi</el-button>
+                    <el-button v-if="!scope.row.isProcess" type="danger" size="small" icon="el-icon-delete" circle @click="openDeletePopup(scope.row)" :disabled="scope.row.totalOutputWeight > 0"></el-button>
                     <el-button type="primary" size="small" icon="el-icon-edit" circle @click="isOpenDialog('edit', scope.row)"></el-button>
-                    <el-button type="danger" size="small" icon="el-icon-delete" circle @click="openDeletePopup(scope.row)" :disabled="scope.row.totalOutputWeight > 0"></el-button>
                   </div>
                 </template>
               </el-table-column>
@@ -143,16 +151,16 @@
         </el-row>
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item class="mb-0" label="Rota Grubu Seçin">
+            <el-form-item class="mb-0" label="Bölge Seçin">
               <el-select
                 class="w-full"
                 v-model="formData.group"
                 filterable
                 clearable
-                placeholder="Grup adı ile ara"
+                placeholder="Bölge adı ile ara"
               >
                 <el-option
-                  v-for="item in getGroupList"
+                  v-for="item in getZoneList"
                   :key="item.value"
                   :label="item.label"
                   :value="item.value"
@@ -186,11 +194,98 @@
       width="25%"
       @close="closeDeletePopup"
     >
-      <p><b>{{ currentCustomer.companyName }}</b> adlı müşterinizi silmek istediğinizden emin misiniz?</p>
-      <p><b>Not :</b> Geçmiş tüm işlemleri de silinecektir.</p>
+      <p class="mb-0"><b>{{ currentCustomer.companyName }}</b> adlı müşterinizi silmek istediğinizden emin misiniz?</p>
       <span slot="footer" class="dialog-footer">
         <el-button @click="deleteCustomerPopupStatus = false">Vazgeç</el-button>
         <el-button type="danger" @click="deleteCustomer">Evet, Sil</el-button>
+      </span>
+    </el-dialog>
+
+    <el-dialog
+      title="Rota oluştur"
+      :visible.sync="createRouteDialog"
+      width="45%"
+      @close="closeRouteDialog"
+    >
+      <el-form label-position="top" :model="formData" label-width="100px">
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item class="mb-0" label="Bölge Seçin">
+              <el-select
+                class="w-full"
+                v-model="filter.groupForRoute"
+                filterable
+                clearable
+                placeholder="Bögle adı ile ara"
+              >
+                <el-option
+                  v-for="item in getZoneList"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                >
+                </el-option>
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="9">
+            <el-form-item class="mb-0" label="İşlem Tipi">
+              <el-radio-group v-model="filter.visitType" size="small">
+                <el-radio :label="1">Tahsilat</el-radio>
+                <el-radio label="Tümü">Tümü</el-radio>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
+          <!-- <el-col :span="8">
+            <el-form-item class="mb-0" label="Devredenler Dahil Edilsin Mi?">
+              <el-radio-group v-model="filter.isOutstandingDebt" size="small">
+                <el-radio :label="1">Evet</el-radio>
+                <el-radio :label="0">Hayır</el-radio>
+              </el-radio-group>
+            </el-form-item>
+          </el-col> -->
+        </el-row>
+      </el-form>
+
+      <hr>
+
+      <el-row :gutter="16">
+        <el-col :span="13">
+          <el-alert
+            v-if="filter.groupForRoute"
+            title="Seçilen bölgeye ait müşterilerin rotası, aşağıdaki gibidir."
+            type="info"
+            :closable="false"
+            show-icon
+            class="mb-4">
+          </el-alert>
+        </el-col>
+      </el-row>
+
+      <el-table
+        :data="getRouteList"
+        border
+        style="width: 100%"
+        show-summary
+        :summary-method="getSummariesRoute"
+        empty-text="Rota için müşteri bulunamadı!">
+        <el-table-column prop="companyName" label="Firma Adı" width="250">
+        </el-table-column>
+        <el-table-column prop="totalDebt" label="Toplam Borç">
+          <template v-slot="scope">
+            <label v-if="scope.row.totalDebt > 0" class="badge badge-gradient-info">{{ scope.row.totalDebt | formatNumber }}₺</label>
+            <label v-else class="badge badge-gradient-success">Ödendi</label>
+          </template>
+        </el-table-column>
+        <el-table-column prop="totalCollection" label="Toplam Tahsilat">
+          <template v-slot="scope">
+            {{ scope.row.totalCollection | formatNumber }}
+          </template>
+        </el-table-column>
+      </el-table>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="createRouteDialog = false">Vazgeç</el-button>
+        <el-button type="primary" icon="el-icon-printer" @click="printRoute" :disabled="!getRouteList.length">Çıktı Al</el-button>
       </span>
     </el-dialog>
   </div>
@@ -200,6 +295,11 @@
 import customers from "@/mock/customers.json";
 import globalMixin from '@/mixins/global.mixin.js';
 import { formatNumber } from '@/util/helpers';
+import dataAll from "@/mock/transactions-all.js";
+import pdfMake from "pdfmake/build/pdfmake";
+import pdfFonts from "pdfmake/build/vfs_fonts";
+pdfMake.vfs = pdfFonts.pdfMake.vfs;
+import logoImage from "@/assets/images/logo.png";
 
 export default {
   name: "Customers",
@@ -212,7 +312,9 @@ export default {
       dialogVisible: false,
       deleteCustomerPopupStatus: false,
       currentCustomer: {},
+      createRouteDialog: false,
       customerDetail: {},
+      exportTableData: [],
       formData: {
         name: "",
         companyName: "",
@@ -223,7 +325,9 @@ export default {
       },
       filter: {
         search: "",
-        group: ""
+        group: "",
+        visitType: "Tümü",
+        groupForRoute: ""
       },
     }
   },
@@ -231,8 +335,18 @@ export default {
     getCustomerList() {
       return customers;
     },
+    getTransactionList() {
+      return dataAll
+    },
     getPopupTitle() {
       return this.isEdit ? "Müşteri Bilgilerini Düzenle" : "Yeni Müşteri Oluştur"
+    },
+    todayGroupNumber() {
+      const today = new Date().getDay();
+      if (today === 0) {
+        return null;
+      }
+      return today;
     },
     paginatedData() {
       const start = (this.currentPage - 1) * this.pageSize
@@ -245,7 +359,7 @@ export default {
       if (this.filter.search) {
         const search = this.filter.search.toLowerCase();
         list = list.filter(item =>
-          `${item.name} ${item.surname}`.toLowerCase().includes(search)
+          `${item.companyName} ${item.name + item.surname}`.toLowerCase().includes(search)
         );
       }
 
@@ -254,9 +368,160 @@ export default {
       }
 
       return list;
+    },
+    getRouteList() {
+      return this.getCustomerList.filter(item => {
+        if (this.filter.groupForRoute) {
+          if (item.group !== Number(this.filter.groupForRoute)) return false;
+        }
+
+        if (this.filter.visitType === 1) {
+          if (!(item.totalDebt > 0)) return false;
+        }
+
+        return true;
+      });
+    },
+    getZoneName() {
+      return this.getZoneList.find(zone => (zone.value == this.filter.groupForRoute))?.label || "Bilinmeyen Bölge"; 
     }
   },
   methods: {
+    openCreateRouteDialog() {
+      this.createRouteDialog = true;
+      const companyName = this.getCustomerList.companyName;
+      this.exportTableData = this.getCustomerList.map(item => ({
+        companyName: companyName,
+        sellAmount: this.$options.filters.formatNumber(item.sellAmount),
+        totalDebt: this.$options.filters.formatNumber(item.totalDebt),
+        totalCollection: this.$options.filters.formatNumber(item.totalCollection),
+        totalReceivable: this.$options.filters.formatNumber(item.totalReceivable),
+      }));
+      this.filter.groupForRoute = this.todayGroupNumber;
+    },
+    closeRouteDialog() {
+      this.createRouteDialog = false;
+    },
+    getSummariesRoute(param) {
+      const { columns } = param;
+      const sums = [];
+
+      columns.forEach((column, index) => {
+        if (index === 0) {
+          sums[index] = 'Toplam Alacak';
+          return;
+        }
+        
+        const isCalculatable =
+          column?.property &&
+          (column.property.includes('totalCollection') ||
+          column.property.includes('totalReceivable') ||
+          column.property.includes('totalDebt'));
+        
+        if (isCalculatable) {
+          const values = this.getRouteList?.map(item => Number(item[column.property]));
+          const total = values?.reduce((prev, curr) => {
+            const value = Number(curr);
+            return !isNaN(value) ? prev + value : prev;
+          }, 0);
+  
+          sums[index] = formatNumber(total) + ' ₺';
+        } else {
+          sums[index] = '';
+        }
+      });
+
+      return sums;
+    },
+    async printRoute() {
+      const list = this.getRouteList
+        .map((item) => ({
+          remaining: item.totalDebt,
+          companyName: item.companyName
+        }));
+
+      const totalDebt = list?.reduce((acc, item) => item.remaining + acc, 0);
+
+      const body = [
+        [
+          { text: "Firma", bold: true },
+          { text: "İşlem Tarihi", bold: true },
+          { text: "Satış Tutarı", bold: true },
+          { text: "Tahs. Tutarı", bold: true },
+          { text: "Güncel Borç(₺)", bold: true },
+          { text: "Açıklama", bold: true }
+        ]
+      ];
+
+      list.forEach(transaction => {
+        body.push([
+          { text: transaction.companyName, margin: [0, 6, 0, 6]},
+          { text: "", margin: [0, 6, 0, 6]},
+          { text: "", margin: [0, 6, 0, 6]},
+          { text: "", margin: [0, 6, 0, 6]},
+          { text: this.$options.filters.formatNumber(transaction.remaining), margin: [0, 6, 0, 6], valign: 'middle'},
+          { text: "", margin: [0, 6, 0, 6]},
+        ]);
+      });
+
+      body.push([
+        { text: "", colSpan: 3, alignment: "left" },
+        "",
+        "",
+        { text: "Toplam:", bold: true, fillColor: '#ddd' },
+        { text: this.$options.filters.formatNumber(totalDebt), bold: true },
+        ""
+      ]);
+
+      async function toBase64(url) {
+        const res = await fetch(url);
+        const blob = await res.blob();
+        return await new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+      }
+
+      const logo = await toBase64(logoImage);
+
+      const docDefinition = {
+        content: [
+          {
+            image: logo,
+            width: 150,
+            alignment: 'center',
+            margin: [0, -20, 0, 0]
+          },
+          { text: `[${this.getZoneName}]`, style: "zoneName" },
+          {
+            table: {
+              headerRows: 1,
+              widths: [100, 55, 55, 55, 70, "*"],
+              body
+            },
+            layout: {
+              fillColor: rowIndex => rowIndex === 0 ? '#CCCCCC' : null
+            },
+            fontSize: 10
+          }
+        ],
+        styles: {
+          header: {
+            bold: false,
+            margin: [-30, 0, -30, 10],
+            alignment: 'center'
+          },
+          zoneName: {
+            bold: true,
+            margin: [0, 0, 0, 10],
+            alignment: 'left'
+          }
+        }
+      };
+
+      pdfMake.createPdf(docDefinition).open();
+    },
     handlePageChange(page) {
       this.currentPage = page;
     },
@@ -275,12 +540,12 @@ export default {
     saveChanges() {
       if (this.isEdit) {
         this.$notify.success({
-          title: 'Başarılı',
+          title: 'İşlem Başarılı',
           message: 'Müşteri Bilgileri Güncellendi'
         });
       } else {
         this.$notify.success({
-          title: 'Başarılı',
+          title: 'İşlem Başarılı',
           message: 'Müşteri Oluşturuldu'
         });
       }
@@ -289,7 +554,7 @@ export default {
     deleteCustomer() {
       if (this.currentCustomer) {
         this.$notify.success({
-          title: 'Başarılı',
+          title: 'İşlem Başarılı',
           message: 'Müşteri Silindi'
         });
         this.closeDeletePopup();
@@ -322,22 +587,24 @@ export default {
         note: ""
       };
     },
-    handleClick(id) {
-      this.$router.push({ name: 'transactions', query: { q: id } });
+    handleClick(row) {
+      this.$router.push({ name: 'transactions', query: { q: row.id, cn: row.companyName } });
     },
     getSummaries(param) {
       const { columns } = param;
       const sums = [];
-
       
       columns.forEach((column, index) => {
         if (index === 0) {
           sums[index] = 'Toplam';
           return;
         }
+        
         const isDebtColumn =
           column?.property &&
-          column.property.toLowerCase().includes('debt');
+          (column.property.includes('totalCollection') ||
+          column.property.includes('totalSale') ||
+          column.property.includes('totalDebt'));
 
           if (isDebtColumn) {
             const values = this.filteredData?.map(item => Number(item[column.property]));
@@ -371,6 +638,10 @@ export default {
         justify-content: flex-end;
       }
     }
+  }
+  .badge {
+    font-size: 12px;
+    min-width: 100px;
   }
 }
 </style>

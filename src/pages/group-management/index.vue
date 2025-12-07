@@ -7,14 +7,14 @@
           <span class="page-title-icon bg-gradient-success text-white mr-2">
             <i class="mdi mdi-routes menu-icon"></i>
           </span>
-          Grup Yönetimi ({{filteredData.length}})
+          Bölge Yönetimi ({{filteredData.length}})
         </div>
         <el-button
           v-if="paginatedData.length < 6"
           type="success"
           size="medium"
           icon="el-icon-circle-plus"
-          @click="isOpenDialog('add')">Grup Ekle</el-button>
+          @click="isOpenDialog('add')">Bölge Ekle</el-button>
       </h3>
     </div>
     <div class="card">
@@ -23,7 +23,7 @@
           <div class="col-3 col-sm-5 col-md-2 mb-3">
             <el-input
               v-model="filter.search"
-              placeholder="Grup Ara..."
+              placeholder="Bölge Ara..."
               clearable
               prefix-icon="el-icon-search"
             />
@@ -33,9 +33,9 @@
               :data="paginatedData"
               border
               style="width: 100%"
-              empty-text="Grup bulunamadı"
+              empty-text="Bölge bulunamadı"
             >
-              <el-table-column prop="name" label="Grup Adı" width="180">
+              <el-table-column prop="name" label="Bölge Adı" width="180">
                 <template v-slot="scope">
                   {{ scope.row.name }} {{ scope.row.surname }}
                 </template>
@@ -66,7 +66,7 @@
       <el-form label-position="top" :model="formData" label-width="100px">
         <el-row :gutter="16">          
           <el-col :span="12">
-            <el-form-item label="Grup Adı">
+            <el-form-item label="Bölge Adı">
               <el-input v-model="formData.groupName" maxlength="24" show-word-limit></el-input>
             </el-form-item>
           </el-col>
@@ -124,7 +124,7 @@ export default {
     }
   },
   computed: {
-    getGroupList() {
+    getZoneList() {
       return this.groupList;
     },
     getDayLabel() {
@@ -139,7 +139,7 @@ export default {
       return this.filteredData?.slice(start, end);
     },
     filteredData() {
-      let list = this.getGroupList || [];
+      let list = this.getZoneList || [];
 
       if (this.filter.search) {
         const search = this.filter.search.toLowerCase();
@@ -151,7 +151,7 @@ export default {
       return list.sort((a, b) => a.day - b.day);
     },
     getPopupTitle() {
-      return this.isEditMode ? 'Grubu Düzenle' : 'Yeni Grup Oluştur';
+      return this.isEditMode ? 'Bölgeyi Düzenle' : 'Yeni Bölge Oluştur';
     },
   },
   methods: {
@@ -170,7 +170,7 @@ export default {
       this.dialogVisible = false;
     },
     deleteGroup(row) {
-      this.$confirm(`${row.name} grubunu silmek istediğinize emin misiniz?`, 'Onay', {
+      this.$confirm(`${row.name} bölgeyi silmek istediğinize emin misiniz?`, 'Onay', {
         confirmButtonText: 'Evet',
         cancelButtonText: 'Hayır',
         type: 'warning'
@@ -178,7 +178,7 @@ export default {
         const index = this.groupList.findIndex(g => g.id === row.id);
         if (index !== -1) {
           this.groupList.splice(index, 1);
-          this.$message.success('Grup başarıyla silindi.');
+          this.$message.success('Bölge başarıyla silindi.');
         }
       }).catch(() => {
         this.$message.info('Silme işlemi iptal edildi.');
@@ -208,7 +208,7 @@ export default {
       const exists = this.groupList.some(g => String(g.day) === String(day));
       if (exists) {
         const dayLabel = GROUP_DAY_LIST.find(d => d.value === day)?.label || "";
-        this.$message.warning(`${dayLabel} günü için zaten bir grup atanmış!`);
+        this.$message.warning(`${dayLabel} günü için zaten bir bölge atanmış!`);
         return;
       }
 
@@ -218,14 +218,14 @@ export default {
           this.groupList[index].name = name;
           this.groupList[index].day = day;
         }
-        this.$message.success("Grup başarıyla güncellendi.");
+        this.$message.success("Bölge başarıyla güncellendi.");
       } else {
         this.groupList.push({
           id: Date.now(),
           name: name,
           day: day
         });
-        this.$message.success("Grup başarıyla eklendi.");
+        this.$message.success("Bölge başarıyla eklendi.");
       }
 
       this.dialogVisible = false;
