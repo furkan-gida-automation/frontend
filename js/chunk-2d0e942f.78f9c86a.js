@@ -1,0 +1,2 @@
+(window["webpackJsonp"]=window["webpackJsonp"]||[]).push([["chunk-2d0e942f"],{"8d7d":function(n,e,i){"use strict";i.r(e);var l=function(){var n=this,e=n.$createElement,i=n._self._c||e;return i("div",[n._v(" profil-bilgileri ")])},r=[],t={name:"profile-information"},o=t,u=i("2877"),a=Object(u["a"])(o,l,r,!1,null,null,null);e["default"]=a.exports}}]);
+//# sourceMappingURL=chunk-2d0e942f.78f9c86a.js.map
