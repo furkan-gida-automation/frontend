@@ -79,8 +79,9 @@
               </el-table-column>
               <el-table-column prop="totalDebt" label="Toplam Borç" sortable>
                 <template v-slot="scope">
-                  <label v-if="scope.row.totalDebt > 0" class="badge badge-danger">{{ scope.row.totalDebt | formatNumber }}₺</label>
-                  <label v-else class="badge badge-gradient-success">Ödendi</label>
+                  <label v-if="scope.row.totalDebt > 0" class="badge badge-danger">{{ scope.row.totalDebt | formatNumber }} ₺</label>
+                  <label v-else class="badge badge-gradient-success">
+                    <i class="el-icon-success"></i> Ödendi</label>
                 </template>
               </el-table-column>
               <el-table-column prop="note" label="Not">
@@ -596,7 +597,7 @@ export default {
       
       columns.forEach((column, index) => {
         if (index === 0) {
-          sums[index] = 'Toplam';
+          sums[index] = 'Toplam:';
           return;
         }
         
@@ -642,6 +643,9 @@ export default {
   .badge {
     font-size: 12px;
     min-width: 100px;
+    &-danger {
+      background-color: red;
+    }
   }
 }
 </style>

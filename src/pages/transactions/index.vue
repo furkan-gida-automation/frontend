@@ -8,13 +8,13 @@
           </span>
           <div class="page-header__summary-item">
             <span>{{getCurrentCompany}}</span>
-            <span>Hesap Ekstesi ({{filteredData.length}})</span>
+            <span>Hesap Ekstresi ({{filteredData.length}})</span>
           </div>
         </div>
         <div>
           <el-button type="success" size="medium" icon="el-icon-circle-plus" @click="newRecord(0)" :disabled="disableAdd">Satış</el-button>
           <el-button type="success" size="medium" icon="el-icon-circle-plus" @click="newRecord(1)" :disabled="disableAdd">Tahsilat</el-button>
-          <el-button type="info" size="medium" icon="el-icon-printer" @click="exportExtract">Dışa Aktar</el-button>
+          <el-button type="info" size="medium" icon="el-icon-printer" @click="exportExtract" :disabled="!filteredData.length">Dışa Aktar</el-button>
         </div>
       </h3>
     </div>
@@ -795,7 +795,7 @@ export default {
 
       columns.forEach((column, index) => {
         if (index === 0) {
-          sums[index] = 'Toplam';
+          sums[index] = 'Toplam:';
           return;
         }
 
